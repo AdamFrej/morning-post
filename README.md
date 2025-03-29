@@ -12,6 +12,7 @@ A Python application that automatically generates a newspaper-style PDF from var
 - Handles images (optional)
 - Site-specific content extraction for better quality
 - Memory-efficient content processing
+- **Secure automated email delivery of generated papers**
 
 ## Installation
 
@@ -64,6 +65,95 @@ A Python application that automatically generates a newspaper-style PDF from var
    ```
 
 3. Find your generated PDF in the `papers` directory (or your custom output directory specified in config)
+
+## Secure Email Delivery
+
+You can set up automatic email delivery of your morning papers using the included email script with secure credential management:
+
+### Step 1: Create a Secure Email Configuration File
+
+Create a restricted-permission configuration file:
+
+```bash
+# Create a secure config file only readable by your user
+touch ~/.morning_paper_email.conf
+chmod 600 ~/.morning_paper_email.conf
+```
+
+Add your email configuration to this file:
+
+```
+RECIPIENT=your@email.com
+SENDER=sender@email.com
+SMTP_SERVER=smtp.your-provider.com
+SMTP_PORT=587
+USERNAME=your_username
+PASSWORD=your_password
+```
+
+### Step 2: Run the Email Script with the Secure Config
+
+```bash
+python email_morning_paper.py --config ~/.morning_paper_email.conf
+```
+
+### Setting Up Automated Email Delivery with Cron
+
+To automate both paper generation and email delivery using secure credentials:
+
+```bash
+# Open crontab editor
+crontab -e
+
+# Add these entries (adjust times and paths as needed):
+# Generate paper at 5:00 AM
+0 5 * * * cd /path/to/your/project && ./main.py
+
+# Email the paper at 6:00 AM using secure config
+0 6 * * * cd /path/to/your/project && ./email_morning_paper.py --config ~/.morning_paper_email.conf
+```
+
+### Using Environment Variables (Alternative Method)
+
+For systems where environment variables are preferred:
+
+```bash
+# Create a file with export statements
+cat > ~/.morning_paper_env << EOF
+export MORNING_PAPER_RECIPIENT="your@email.com"
+export MORNING_PAPER_SENDER="sender@email.com"
+export MORNING_PAPER_SMTP_SERVER="smtp.your-provider.com"
+export MORNING_PAPER_SMTP_PORT="587"
+export MORNING_PAPER_USERNAME="your_username"
+export MORNING_PAPER_PASSWORD="your_password"
+EOF
+
+# Secure the file
+chmod 600 ~/.morning_paper_env
+
+# In your crontab, source the environment variables before running the script
+0 6 * * * source ~/.morning_paper_env && cd /path/to/your/project && ./email_morning_paper.py --use-env
+```
+
+### Email Provider Examples
+
+When setting up your configuration file, use these settings for common providers:
+
+#### Gmail
+```
+SMTP_SERVER=smtp.gmail.com
+SMTP_PORT=587
+USERNAME=youremail@gmail.com
+PASSWORD=your_app_password  # Use an App Password, not your regular password
+```
+
+#### Office 365
+```
+SMTP_SERVER=smtp.office365.com
+SMTP_PORT=587
+USERNAME=your@office365.com
+PASSWORD=your_password
+```
 
 ## Configuration
 
@@ -162,6 +252,14 @@ For large feeds or many articles, you can:
 - Decrease the number of feeds
 - Set `extract_full_content` to `false` to use summaries instead
 - Set `include_images` to `false` to skip image processing
+
+### Email Troubleshooting
+
+- **Configuration File Permissions**: Ensure your config file has the correct permissions (`chmod 600`)
+- **Authentication Errors**: Double-check your username and password. For Gmail, use an App Password.
+- **Connection Issues**: Verify the SMTP server and port are correct for your email provider.
+- **Cron Environment**: If using cron, ensure paths are absolute and environment is properly set up.
+- **Missing PDFs**: Make sure the PDF generation completed successfully before sending emails.
 
 ## Contributing
 
