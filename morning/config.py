@@ -71,11 +71,6 @@ class ConfigManager:
                 "extraction": 15
             },
             "max_content_length": 50000,
-            "site_specific_selectors": {
-                "nytimes.com": "article[data-testid='article-container']",
-                "bbc.com": "article[data-component='text-block']",
-                "bbc.co.uk": "article[data-component='text-block']"
-            },
             "fallback_selectors": [
                 "article", "main", "div.content", "div.article", "div.post",
                 ".entry-content", "#content", ".article__body", ".post-content"

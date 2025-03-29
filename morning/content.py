@@ -4,6 +4,7 @@ import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse
 import gc
+import re
 
 from .utils import time_limit, TimeoutException
 from .config_models import AppConfig
@@ -58,6 +59,93 @@ class ContentExtractor:
 
         return True
 
+    def _get_text_density(self, element):
+        """Calculate text density ratio for an element.
+
+        Returns a score based on text content length to HTML length ratio.
+        """
+        if element is None:
+            return 0
+
+        html_length = len(str(element))
+        if html_length == 0:
+            return 0
+
+        text_length = len(element.get_text(strip=True))
+        return text_length / html_length
+
+    def _find_content_by_density(self, soup):
+        """Find the element with the highest text density.
+
+        This helps identify content-rich areas vs navigation/sidebar areas.
+        """
+        candidates = {}
+        min_length = 200  # Minimum text length to consider
+
+        for tag in soup.find_all(['article', 'main', 'div', 'section']):
+            # Skip tiny elements and known non-content areas
+            text = tag.get_text(strip=True)
+            if len(text) < min_length:
+                continue
+
+            # Skip elements with certain common non-content classes
+            if tag.get('class'):
+                class_str = ' '.join(tag.get('class'))
+                if re.search(r'(comment|sidebar|footer|header|navigation|menu|nav|ad)', class_str, re.I):
+                    continue
+
+            # Calculate density score
+            density = self._get_text_density(tag)
+            candidates[tag] = density
+
+        if not candidates:
+            return None
+
+        # Return the element with highest density
+        best_element = max(candidates.items(), key=lambda x: x[1])[0]
+        return best_element
+
+    def _get_content_using_heuristics(self, soup):
+        """Extract main content using multiple heuristics.
+
+        Returns the most likely content element based on several methods.
+        """
+        # 1. Try article tags - most semantic way to mark content
+        articles = soup.find_all('article')
+        if len(articles) == 1:
+            return articles[0]
+        elif len(articles) > 1:
+            # If multiple articles, find the longest one
+            return max(articles, key=lambda x: len(x.get_text(strip=True)))
+
+        # 2. Look for elements with article-indicating attributes
+        for attr in ['itemprop="articleBody"', 'property="articleBody"', 'class="post-content"',
+                     'class="article-content"', 'id="article-body"', 'class="entry-content"',
+                     'class="story-body"']:
+            parts = attr.split('=')
+            if len(parts) == 2:
+                attr_name, attr_value = parts
+                attr_name = attr_name.strip()
+                attr_value = attr_value.strip('"\'')
+
+                if attr_name == 'class':
+                    elements = soup.find_all(class_=attr_value)
+                elif attr_name == 'id':
+                    elements = soup.find_all(id=attr_value)
+                else:
+                    elements = soup.find_all(attrs={attr_name: attr_value})
+
+                if elements:
+                    return elements[0]
+
+        # 3. Look for the main tag
+        main_tag = soup.find('main')
+        if main_tag:
+            return main_tag
+
+        # 4. Find by density analysis
+        return self._find_content_by_density(soup)
+
     def extract_article_content(self, url: str) -> str:
         """Extract the main content from an article URL with improved quality.
 
@@ -81,7 +169,7 @@ class ContentExtractor:
         timeout = self.config.timeout.request
         extraction_timeout = self.config.timeout.extraction
         max_length = self.config.max_content_length
-        site_specific_selectors = self.config.site_specific_selectors
+        include_images = self.config.include_images
 
         try:
             # Get the page with timeout
@@ -89,7 +177,6 @@ class ContentExtractor:
 
             # Limit content size for memory management
             content = response.content[:500000]  # Limit to 500KB to avoid memory issues
-            include_images = self.config.include_images
 
             # Process the content with a timeout
             with time_limit(extraction_timeout):
@@ -105,24 +192,12 @@ class ContentExtractor:
                     soup = BeautifulSoup(content, "html.parser")
                     logger.info("readability-lxml not available, using BeautifulSoup fallback")
 
-                    # Try site-specific extraction based on domain
-                    domain = urlparse(url).netloc
-                    main_content = None
+                    # Use our enhanced heuristic content extraction
+                    main_content = self._get_content_using_heuristics(soup)
 
-                    # Check if we have a specific selector for this domain in config
-                    for site_domain, selector in site_specific_selectors.items():
-                        if site_domain in domain:
-                            main_content = soup.select_one(selector)
-                            if main_content:
-                                logger.info(f"Used site-specific selector for {domain}")
-                                break
-
-                    # Use generic fallback selectors if no site-specific selector matched
                     if not main_content:
-                        # Use the fallback selectors from config
-                        fallback_selectors = self.config.fallback_selectors
-
-                        for selector in fallback_selectors:
+                        # Last fallback: Use generic selectors from config
+                        for selector in self.config.fallback_selectors:
                             try:
                                 if '.' in selector or '#' in selector or '[' in selector:
                                     main_content = soup.select_one(selector)
@@ -134,7 +209,7 @@ class ContentExtractor:
                                 continue
 
                     if not main_content:
-                        # Fallback: Get paragraphs from body
+                        # Ultimate fallback: Get paragraphs from body
                         paragraphs = soup.find_all("p")
                         content_text = "".join(str(p) for p in paragraphs[:20])  # Limit to first 20 paragraphs
                         temp_soup = BeautifulSoup(f"<div>{content_text}</div>", "html.parser")

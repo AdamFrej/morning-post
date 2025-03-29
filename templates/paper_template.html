@@ -5,27 +5,28 @@
         <title>Morning Paper - {{ date }}</title>
         <style>
             @page {
-                margin: 1.5cm;
+                margin: 1.2cm;
                 size: A4;
             }
             body {
                 font-family: "Times New Roman", Times, serif;
-                line-height: 1.3;
+                line-height: 1.25;
                 margin: 0;
                 padding: 0;
                 color: #222;
-                font-size: 9.5pt;
+                font-size: 9pt;
+                background-color: #fcfcfc;
             }
             .header {
                 text-align: center;
                 border-bottom: 2px solid #000;
                 padding-bottom: 0.3cm;
-                margin-bottom: 0.5cm;
+                margin-bottom: 0.4cm;
                 margin-top: 0;
                 padding-top: 0;
             }
             .masthead {
-                font-size: 24pt;
+                font-size: 28pt;
                 font-weight: bold;
                 letter-spacing: 0.05em;
                 margin: 0;
@@ -38,22 +39,23 @@
                 font-size: 10pt;
             }
 
-            /* Columns that allow content to flow across pages */
             .articles-container {
                 column-count: 2;
                 column-gap: 0.5cm;
-                column-rule: 1px solid #ddd;
+                column-rule: 1px solid #ccc;
                 column-fill: auto;
             }
 
-            /* CRITICAL: Allow articles to break across pages */
             .article {
-                margin-bottom: 0.4cm;
-                break-inside: auto !important; /* Critical change */
-                page-break-inside: auto !important; /* For older browsers */
+                margin-bottom: 0.5cm;
+                break-inside: auto !important;
+                page-break-inside: auto !important;
+                padding: 0.2cm;
+                background-color: white;
+                border-radius: 2px;
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
             }
 
-            /* Keep titles with at least some content */
             .article-title {
                 font-size: 11pt;
                 font-weight: bold;
@@ -61,6 +63,8 @@
                 line-height: 1.2;
                 break-after: avoid;
                 page-break-after: avoid;
+                border-bottom: 1px solid #eee;
+                padding-bottom: 0.1cm;
             }
 
             .article-meta {
@@ -76,7 +80,6 @@
                 text-align: justify;
                 font-size: 9pt;
                 hyphens: auto;
-                /* Allow content to break naturally */
                 break-inside: auto !important;
                 page-break-inside: auto !important;
             }
@@ -86,6 +89,8 @@
                 font-size: 8pt;
                 text-align: right;
                 margin-top: 0.1cm;
+                padding-top: 0.1cm;
+                border-top: 1px dotted #eee;
             }
 
             img {
@@ -94,16 +99,20 @@
                 margin: 0.2cm;
                 float: right;
                 clear: right;
+                border: 1px solid #eee;
             }
 
             .article-content p {
-                margin: 0.1cm 0;
+                margin: 0.15cm 0;
                 text-indent: 0.3cm;
             }
 
             .article-content p:first-child {
                 text-indent: 0;
+                font-weight: 500; /* Slightly bolder first paragraph */
             }
+
+            /* Drop caps removed */
 
             h1,
             h2,
@@ -137,30 +146,13 @@
                 text-decoration: none;
             }
 
-            .article-content a[href^="http"],
-            .article-content a[href^="https"] {
-                color: inherit;
-                text-decoration: none;
-            }
-
-            .article-content a[href^="#fn"],
-            .article-content [id^="fn"],
-            .article-content [id^="fnref"],
-            .article-content div.footnotes,
-            .article-content section.footnotes {
-                display: none;
-            }
-
-            .article-content a img {
-                border: none;
-            }
-
             code,
             pre {
                 font-family: "Courier New", Courier, monospace;
-                font-size: 8.5pt;
-                background-color: #f5f5f5;
+                font-size: 8pt;
+                background-color: #f8f8f8;
                 padding: 0.1cm;
+                border-radius: 2px;
             }
 
             pre {
@@ -168,13 +160,14 @@
                 overflow-x: hidden;
                 white-space: pre-wrap;
                 margin: 0.2cm 0;
+                border-left: 3px solid #eee;
             }
 
             table {
                 width: 100%;
                 border-collapse: collapse;
                 margin: 0.2cm 0;
-                font-size: 8.5pt;
+                font-size: 8pt;
             }
 
             th,
@@ -184,17 +177,39 @@
             }
 
             th {
-                background-color: #f0f0f0;
+                background-color: #f5f5f5;
             }
 
-            /* Add spacing between articles with a small divider */
-            .article:not(:last-child):after {
-                content: "• • •";
-                display: block;
-                text-align: center;
-                margin: 0.2cm 0;
-                font-size: 8pt;
-                color: #666;
+            .article:not(:last-child) {
+                margin-bottom: 0.4cm;
+                padding-bottom: 0.2cm;
+            }
+
+            .article-content blockquote {
+                float: right;
+                width: 40%;
+                font-style: italic;
+                font-size: 9.5pt;
+                border-left: 3px solid #ddd;
+                margin: 0.2cm;
+                padding: 0.1cm 0.2cm;
+                background-color: #fafafa;
+            }
+
+            .article-content h2,
+            .article-content h3 {
+                border-bottom: 1px dotted #eee;
+                padding-bottom: 0.05cm;
+            }
+
+            .article-content ul,
+            .article-content ol {
+                margin: 0.1cm 0;
+                padding-left: 0.5cm;
+            }
+
+            .article-content li {
+                margin-bottom: 0.05cm;
             }
         </style>
     </head>

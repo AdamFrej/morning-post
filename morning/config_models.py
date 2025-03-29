@@ -68,7 +68,6 @@ class AppConfig(BaseModel):
     max_content_length: int = Field(ge=1000, le=500000, default=50000)
     newspaper_title: str = "Morning Paper"
     columns: int = Field(ge=1, le=3, default=1)
-    site_specific_selectors: Dict[str, str] = {}
     fallback_selectors: List[str] = []
     elements_to_remove: List[str] = []
     class_selectors_to_remove: List[str] = []

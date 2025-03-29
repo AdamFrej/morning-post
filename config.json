@@ -1,46 +1,5 @@
 {
-  "rss_feeds": [
-    {
-      "name": "TechCrunch",
-      "url": "https://techcrunch.com/feed/",
-      "max_articles": 1
-    },
-    {
-      "name": "The Verge",
-      "url": "https://www.theverge.com/rss/index.xml",
-      "max_articles": 1
-    },
-    {
-      "name": "Ars Technica",
-      "url": "https://arstechnica.com/feed/",
-      "max_articles": 1
-    },
-    {
-      "name": "DEV Community",
-      "url": "https://dev.to/feed",
-      "max_articles": 1
-    },
-    {
-      "name": "GitHub Blog",
-      "url": "https://github.blog/feed/",
-      "max_articles": 1
-    },
-    {
-      "name": "Y Combinator Blog",
-      "url": "https://blog.ycombinator.com/feed/",
-      "max_articles": 1
-    },
-    {
-      "name": "Krebs on Security",
-      "url": "https://krebsonsecurity.com/feed/",
-      "max_articles": 1
-    },
-    {
-      "name": "OpenAI Blog",
-      "url": "https://openai.com/blog/rss/",
-      "max_articles": 1
-    }
-  ],
+  "rss_feeds": [],
   "hacker_news": {
     "include": true,
     "max_articles": 5,
@@ -53,15 +12,15 @@
   },
   "pdf_options": {
     "page-size": "A4",
-    "margin-top": "15mm",
-    "margin-right": "15mm",
-    "margin-bottom": "15mm",
-    "margin-left": "15mm",
+    "margin-top": "12mm",
+    "margin-right": "12mm",
+    "margin-bottom": "12mm",
+    "margin-left": "12mm",
     "encoding": "UTF-8",
     "no-outline": null,
     "enable-local-file-access": null,
     "print-media-type": null,
-    "dpi": 600,
+    "dpi": 1200,
     "grayscale": true
   },
   "output_directory": "./papers",
@@ -79,21 +38,6 @@
   "max_content_length": 50000,
   "newspaper_title": "Morning Post",
   "columns": 2,
-  "site_specific_selectors": {
-    "nytimes.com": "article[data-testid='article-container']",
-    "bbc.com": "article[data-component='text-block']",
-    "bbc.co.uk": "article[data-component='text-block']",
-    "theverge.com": "div.duet--article--article-body-component",
-    "washingtonpost.com": "div.article-body",
-    "medium.com": "article",
-    "towardsdatascience.com": "article",
-    "techcrunch.com": "div.article-content",
-    "arstechnica.com": "article",
-    "krebsonsecurity.com": ".entry-content",
-    "dev.to": ".body",
-    "github.blog": ".post-content",
-    "openai.com": "main.content"
-  },
   "fallback_selectors": [
     "article",
     "main",

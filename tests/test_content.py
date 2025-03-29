@@ -21,7 +21,6 @@ class TestContentExtractor(unittest.TestCase):
             },
             timeout={"request": 5, "extraction": 10},
             max_content_length=5000,
-            site_specific_selectors={"example.com": "article.main"},
             fallback_selectors=["article", "main", "div.content"],
             elements_to_remove=["script", "style"],
             class_selectors_to_remove=[".ad", ".comments"]
