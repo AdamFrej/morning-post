@@ -21,8 +21,8 @@ class TemplateManager:
         if not os.path.exists(template_dir):
             os.makedirs(template_dir, exist_ok=True)
 
-            # Create default templates if they don't exist
-            self._create_default_templates(template_dir)
+        # Create default templates if they don't exist
+        self._create_default_templates(template_dir)
 
         return jinja2.Environment(
             loader=jinja2.FileSystemLoader(template_dir)
@@ -40,7 +40,6 @@ class TemplateManager:
                 script_dir = os.path.dirname(os.path.abspath(__file__))
                 parent_dir = os.path.dirname(script_dir)
                 default_templates_dir = os.path.join(parent_dir, 'default_templates')
-
             except:
                 logger.warning("Could not locate default templates directory")
 
