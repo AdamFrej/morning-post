@@ -91,9 +91,6 @@ class MorningPaperGenerator:
                 parent_dir = os.path.dirname(script_dir)
                 default_templates_dir = os.path.join(parent_dir, 'default_templates')
 
-                # If still not found, try with gazeta folder
-                if not os.path.exists(default_templates_dir):
-                    default_templates_dir = os.path.join(parent_dir, 'gazeta', 'default_templates')
             except:
                 logger.warning("Could not locate default templates directory")
 
@@ -230,6 +227,23 @@ Please create your own template or check the documentation for example templates
             return all([result.scheme, result.netloc])
         except:
             return False
+
+    def _is_web_page_url(self, url):
+        """Check if URL points to a webpage rather than a file download."""
+        file_extensions = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx',
+                           '.zip', '.rar', '.tar', '.gz', '.mp3', '.mp4', '.avi',
+                           '.mov', '.exe', '.dmg', '.apk', '.iso']
+
+        parsed_url = urlparse(url)
+        path = parsed_url.path.lower()
+
+        # Check for file extensions in the path
+        for ext in file_extensions:
+            if path.endswith(ext):
+                logger.info(f"Skipping file URL: {url}")
+                return False
+
+        return True
 
     def fetch_rss_articles(self):
         """Fetch articles from configured RSS feeds."""
@@ -390,6 +404,9 @@ Please create your own template or check the documentation for example templates
             logger.error(f"Error fetching Hacker News articles: {str(e)[:100]}")
 
     def _extract_article_content(self, url):
+        if not self._is_web_page_url(url):
+                return f"<p><em>This article links to a file that cannot be displayed in the paper. View the original at:</em> {url}</p>"
+
         """Extract the main content from an article URL with improved quality."""
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
@@ -551,18 +568,112 @@ Please create your own template or check the documentation for example templates
             logger.warning("No articles to generate paper from")
             return None
 
-        # Group articles by source
-        sources = {}
-        for article in self.articles:
-            source = article["source"]
-            if source not in sources:
-                sources[source] = []
-            sources[source].append(article)
+        # Sort all articles by date, newest first
+        # Try to parse published date, fall back to string comparison
+        def get_article_date(article):
+            published = article.get("published", "")
+            try:
+                # Try different date formats
+                for fmt in ["%Y-%m-%d %H:%M:%S", "%a, %d %b %Y %H:%M:%S %z", "%Y-%m-%dT%H:%M:%S%z"]:
+                    try:
+                        dt = datetime.datetime.strptime(published, fmt)
+                        # Make sure the datetime is naive (no timezone info)
+                        if dt.tzinfo is not None:
+                            # Convert to UTC then remove timezone info
+                            dt = dt.astimezone(datetime.timezone.utc).replace(tzinfo=None)
+                        return dt
+                    except ValueError:
+                        continue
 
-        # Template variables
+                # If none of the formats match, try a simpler approach
+                return datetime.datetime.strptime(published[:10], "%Y-%m-%d")
+            except Exception as e:
+                # Return current time minus random seconds for stable sorting
+                # when dates can't be parsed
+                logger.debug(f"Could not parse date '{published}': {e}")
+                return datetime.datetime.now() - datetime.timedelta(seconds=hash(article.get("title", "")) % 86400)
+
+        # Sort the articles, newest first
+        sorted_articles = sorted(self.articles, key=get_article_date, reverse=True)
+
+        # Filter out articles with insufficient content or file links
+        filtered_articles = []
+        for article in sorted_articles:
+            content = article.get("content", "")
+            title = article.get("title", "").lower()
+            link = article.get("link", "").lower()
+
+            # Skip PDF files based on title or link
+            file_extensions = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx',
+                             '.zip', '.rar', '.tar', '.gz', '.mp3', '.mp4', '.avi',
+                             '.mov', '.exe', '.dmg', '.apk', '.iso']
+
+            # Check if title indicates a file
+            if any(ext in title for ext in file_extensions):
+                logger.info(f"Skipping file article based on title: {article.get('title', 'Unknown')}")
+                continue
+
+            # Check if link is a direct file download
+            if any(link.endswith(ext) for ext in file_extensions):
+                logger.info(f"Skipping file article based on URL: {article.get('title', 'Unknown')}")
+                continue
+
+            # Strip HTML tags and extra whitespace
+            from bs4 import BeautifulSoup
+            text_content = BeautifulSoup(content, "html.parser").get_text().strip()
+
+            # Skip articles with very short content
+            if len(text_content) < 150:
+                logger.info(f"Skipping article with insufficient content: {article.get('title', 'Unknown')}")
+                continue
+
+            # Skip articles that mention file links
+            file_link_phrases = [
+                'This article links to a file that cannot be displayed',
+                'links to a file',
+                'download the file',
+                'view the PDF',
+                'download PDF',
+                'View the original'
+            ]
+
+            skip = False
+            for phrase in file_link_phrases:
+                if phrase.lower() in text_content.lower():
+                    logger.info(f"Skipping file link article: {article.get('title', 'Unknown')}")
+                    skip = True
+                    break
+
+            if skip:
+                continue
+
+            # Skip articles that appear to have failed extraction
+            error_phrases = [
+                'Content extraction failed',
+                'Content extraction timed out',
+                'No text content available',
+                'Failed to extract'
+            ]
+
+            for phrase in error_phrases:
+                if phrase in text_content and len(text_content) < 200:
+                    logger.info(f"Skipping article with extraction error: {article.get('title', 'Unknown')}")
+                    skip = True
+                    break
+
+            if not skip:
+                filtered_articles.append(article)
+
+        # Check if we still have articles after filtering
+        if not filtered_articles:
+            logger.warning("No articles with sufficient content to generate paper")
+            return None
+
+        # Template variables - include both old and new format for compatibility
         template_vars = {
             "date": datetime.datetime.now().strftime("%A, %B %d, %Y"),
-            "sources": sources
+            "articles": filtered_articles,  # New format - single list of all articles
+            "sources": {"Today's Articles": filtered_articles}  # Old format - for backward compatibility
         }
 
         # Get the main template name from config
