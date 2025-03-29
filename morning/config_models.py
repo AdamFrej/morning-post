@@ -1,6 +1,6 @@
 """Pydantic models for configuration management."""
 from typing import List, Dict, Optional, Any, Union
-from pydantic import BaseModel, HttpUrl, Field, validator
+from pydantic import BaseModel, HttpUrl, Field, field_validator, ConfigDict  # Updated import
 import os
 
 
@@ -10,9 +10,7 @@ class RSSFeedConfig(BaseModel):
     url: HttpUrl  # Validates URLs automatically
     max_articles: int = Field(gt=0, le=20)  # Ensures reasonable limits
 
-    class Config:
-        """Pydantic config options."""
-        extra = "forbid"  # Prevent unexpected fields
+    model_config = ConfigDict(extra="forbid")  # V2 style config using ConfigDict
 
 
 class HackerNewsAPIEndpoints(BaseModel):
@@ -21,7 +19,8 @@ class HackerNewsAPIEndpoints(BaseModel):
     item: str  # Contains format placeholders
     discussion_url: str  # Contains format placeholders
 
-    @validator("item", "discussion_url")
+    @field_validator("item", "discussion_url")  # Updated to field_validator
+    @classmethod  # Add classmethod decorator for field_validator
     def validate_format_string(cls, v):
         """Ensure strings contain format placeholders for IDs."""
         if "{}" not in v:
@@ -43,7 +42,8 @@ class TemplatesConfig(BaseModel):
     main_template: str = "paper_template.html"
     article_template: str = "article_template.html"
 
-    @validator("directory")
+    @field_validator("directory")  # Updated to field_validator
+    @classmethod  # Add classmethod decorator for field_validator
     def directory_exists(cls, v):
         """Create directory if it doesn't exist."""
         os.makedirs(v, exist_ok=True)
@@ -73,12 +73,11 @@ class AppConfig(BaseModel):
     elements_to_remove: List[str] = []
     class_selectors_to_remove: List[str] = []
 
-    @validator("output_directory")
+    @field_validator("output_directory")  # Updated to field_validator
+    @classmethod  # Add classmethod decorator for field_validator
     def create_output_directory(cls, v):
         """Create output directory if it doesn't exist."""
         os.makedirs(v, exist_ok=True)
         return v
 
-    class Config:
-        """Pydantic config options."""
-        extra = "ignore"  # Allow extra fields for backward compatibility
+    model_config = ConfigDict(extra="ignore")  # V2 style config using ConfigDict

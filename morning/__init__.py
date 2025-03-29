@@ -1,10 +1,13 @@
 """Morning Paper Generator package."""
+import logging
 from .config import ConfigManager
 from .content import ContentExtractor
 from .templates import TemplateManager
 from .rendering import DocumentRenderer
 from .fetchers.rss import RSSFetcher
 from .fetchers.hackernews import HackerNewsFetcher
+
+logger = logging.getLogger(__name__)  # Add this line to define logger
 
 class MorningPaperGenerator:
     def __init__(self, config_path="config.json"):
@@ -17,6 +20,7 @@ class MorningPaperGenerator:
         self.hackernews_fetcher = HackerNewsFetcher(self.config, self.content_extractor)
         self.renderer = DocumentRenderer(self.config, self.template_manager)
         self.articles = []
+
     def run(self):
         """Run the morning paper generation process.
 

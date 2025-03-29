@@ -35,11 +35,11 @@ class ConfigManager:
     def _parse_config(self) -> AppConfig:
         """Parse raw config into validated Pydantic model."""
         try:
-            return AppConfig(**self._raw_config)
+            return AppConfig.model_validate(self._raw_config)  # V2 style using model_validate
         except Exception as e:
             logger.error(f"Error in configuration: {e}")
             logger.info("Using default configuration")
-            return AppConfig(**self._get_default_config())
+            return AppConfig.model_validate(self._get_default_config())  # V2 style using model_validate
 
     def _get_default_config(self) -> Dict[str, Any]:
         """Return default configuration settings."""
@@ -92,8 +92,8 @@ class ConfigManager:
     def save_config(self) -> None:
         """Save current configuration back to file."""
         try:
-            # Convert Pydantic model to dict and save
-            config_dict = self.config.dict()
+            # Convert Pydantic model to dict with handling of special types
+            config_dict = self.config.model_dump(mode='json')  # V2 style using model_dump
             with open(self.config_path, 'w') as f:
                 json.dump(config_dict, f, indent=4)
             logger.info(f"Configuration saved to {self.config_path}")
