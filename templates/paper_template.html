@@ -1,0 +1,231 @@
+<!doctype html>
+<html>
+    <head>
+        <meta charset="UTF-8" />
+        <title>Morning Paper - {{ date }}</title>
+        <style>
+            @page {
+                margin: 1.5cm;
+                size: A4;
+            }
+            body {
+                font-family: "Times New Roman", Times, serif;
+                line-height: 1.3;
+                margin: 0;
+                padding: 0;
+                color: #222;
+                font-size: 9.5pt;
+            }
+            .container {
+                margin: 0;
+                padding: 0;
+            }
+            .header {
+                text-align: center;
+                border-bottom: 2px solid #000;
+                padding-bottom: 0.3cm;
+                margin-bottom: 0.5cm;
+                /* Reduce header size */
+                margin-top: 0;
+                padding-top: 0;
+            }
+            .masthead {
+                font-size: 24pt; /* Smaller title */
+                font-weight: bold;
+                letter-spacing: 0.05em;
+                margin: 0;
+                font-family: "Times New Roman", Times, serif;
+                text-transform: uppercase;
+            }
+            .date {
+                font-style: italic;
+                margin-top: 0.1cm;
+                font-size: 10pt;
+            }
+            .source-section {
+                margin-bottom: 0.8cm;
+                /* Remove automatic page breaking for source sections */
+                page-break-before: auto !important;
+            }
+            .source {
+                font-weight: bold;
+                font-size: 14pt;
+                border-bottom: 1px solid #222;
+                margin-bottom: 0.3cm;
+                padding-bottom: 0.1cm;
+                break-after: avoid;
+            }
+            .articles-container {
+                column-count: 2;
+                column-gap: 0.5cm;
+                column-rule: 1px solid #ddd;
+            }
+            .article {
+                margin-bottom: 0.6cm;
+                break-inside: avoid-column;
+            }
+            .article-title {
+                font-size: 11pt;
+                font-weight: bold;
+                margin-bottom: 0.1cm;
+                line-height: 1.2;
+                break-after: avoid;
+            }
+            .article-meta {
+                font-style: italic;
+                color: #444;
+                margin-bottom: 0.1cm;
+                font-size: 8pt;
+            }
+            .article-content {
+                text-align: justify;
+                font-size: 9pt;
+                hyphens: auto;
+            }
+            .article-source {
+                font-style: italic;
+                font-size: 8pt;
+                text-align: right;
+                margin-top: 0.1cm;
+            }
+            /* Make images float to allow text to wrap around them */
+            img {
+                max-width: 40%;
+                height: auto;
+                margin: 0.2cm;
+                float: right;
+                clear: right;
+            }
+            /* Reduce paragraph spacing */
+            .article-content p {
+                margin: 0.1cm 0;
+                text-indent: 0.3cm;
+            }
+            .article-content p:first-child {
+                text-indent: 0;
+            }
+            h1,
+            h2,
+            h3,
+            h4,
+            h5,
+            h6 {
+                break-after: avoid;
+                margin: 0.2cm 0 0.1cm 0;
+                line-height: 1.2;
+            }
+            /* Heading size reductions */
+            .article-content h1 {
+                font-size: 11pt;
+            }
+            .article-content h2 {
+                font-size: 10.5pt;
+            }
+            .article-content h3 {
+                font-size: 10pt;
+            }
+            .article-content h4,
+            h5,
+            h6 {
+                font-size: 9.5pt;
+            }
+
+            /* Clean up markdown artifacts */
+            a {
+                color: inherit;
+                text-decoration: none;
+            }
+            .article-content a[href^="http"],
+            .article-content a[href^="https"] {
+                color: inherit;
+                text-decoration: none;
+            }
+            /* Hide markdown link references */
+            .article-content a[href^="#fn"],
+            .article-content [id^="fn"],
+            .article-content [id^="fnref"],
+            .article-content div.footnotes,
+            .article-content section.footnotes {
+                display: none;
+            }
+            /* Clean up image links */
+            .article-content a img {
+                border: none;
+            }
+            /* Better display for code blocks */
+            code,
+            pre {
+                font-family: "Courier New", Courier, monospace;
+                font-size: 8.5pt;
+                background-color: #f5f5f5;
+                padding: 0.1cm;
+            }
+            pre {
+                padding: 0.2cm;
+                overflow-x: hidden;
+                white-space: pre-wrap;
+                margin: 0.2cm 0;
+            }
+            /* Table styling */
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                margin: 0.2cm 0;
+                font-size: 8.5pt;
+            }
+            th,
+            td {
+                border: 1px solid #ddd;
+                padding: 0.1cm;
+            }
+            th {
+                background-color: #f0f0f0;
+            }
+            /* Fix for empty pages */
+            .source-section,
+            .articles-container {
+                page-break-inside: auto;
+            }
+            .article {
+                page-break-inside: avoid;
+            }
+            /* Clear floats at the end of each article */
+            .article:after {
+                content: "";
+                display: table;
+                clear: both;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1 class="masthead">Morning Post</h1>
+                <div class="date">{{ date }}</div>
+            </div>
+
+            {% for source_name, articles in sources.items() %}
+            <div class="source-section">
+                <h2 class="source">{{ source_name }}</h2>
+
+                <div class="articles-container">
+                    {% for article in articles %}
+                    <div class="article">
+                        <h3 class="article-title">{{ article.title }}</h3>
+                        <div class="article-meta">
+                            Published: {{ article.published }}
+                        </div>
+                        <div class="article-content">
+                            {{ article.content | safe }}
+                        </div>
+                        <div class="article-source">
+                            Source: {{ article.source }}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </body>
+</html>

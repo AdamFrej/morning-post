@@ -1,0 +1,26 @@
+# Core requirements
+feedparser==6.0.10
+requests==2.31.0
+beautifulsoup4==4.12.2
+markdownify==0.11.6
+Jinja2==3.1.2
+
+# Content extraction
+readability-lxml==0.8.1
+lxml>=4.9.3,<5.0.0  # Explicit dependency for readability-lxml
+
+# PDF generation
+WeasyPrint==65.0
+fonttools==4.46.0
+
+# System utilities
+psutil==5.9.5
+
+# Dependencies that need minimum versions for security
+setuptools>=65.0.0
+urllib3>=1.26.18
+certifi>=2023.7.22
+
+# Optional content extraction alternatives (commented out by default)
+# newspaper3k==0.2.8
+# trafilatura==1.6.1
