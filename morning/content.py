@@ -6,24 +6,43 @@ from urllib.parse import urlparse
 import gc
 
 from .utils import time_limit, TimeoutException
+from .config_models import AppConfig
 
 logger = logging.getLogger(__name__)
 
 class ContentExtractor:
-    def __init__(self, config):
-        """Initialize the content extractor."""
+    def __init__(self, config: AppConfig):
+        """Initialize the content extractor.
+
+        Args:
+            config: Validated application configuration
+        """
         self.config = config
 
-    def _is_valid_url(self, url):
-        """Check if URL is valid and has an acceptable domain."""
+    def _is_valid_url(self, url: str) -> bool:
+        """Check if URL is valid and has an acceptable domain.
+
+        Args:
+            url: The URL to validate
+
+        Returns:
+            True if the URL is valid, False otherwise
+        """
         try:
             result = urlparse(url)
             return all([result.scheme, result.netloc])
         except:
             return False
 
-    def _is_web_page_url(self, url):
-        """Check if URL points to a webpage rather than a file download."""
+    def _is_web_page_url(self, url: str) -> bool:
+        """Check if URL points to a webpage rather than a file download.
+
+        Args:
+            url: The URL to check
+
+        Returns:
+            True if the URL appears to be a web page, False if likely a file
+        """
         file_extensions = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx',
                            '.zip', '.rar', '.tar', '.gz', '.mp3', '.mp4', '.avi',
                            '.mov', '.exe', '.dmg', '.apk', '.iso']
@@ -39,8 +58,19 @@ class ContentExtractor:
 
         return True
 
-    def extract_article_content(self, url):
-        """Extract the main content from an article URL with improved quality."""
+    def extract_article_content(self, url: str) -> str:
+        """Extract the main content from an article URL with improved quality.
+
+        Args:
+            url: The article URL to extract content from
+
+        Returns:
+            HTML content as string
+
+        Raises:
+            TimeoutException: If extraction takes too long
+            requests.RequestException: On request failure
+        """
         if not self._is_web_page_url(url):
             return f"<p><em>This article links to a file that cannot be displayed in the paper. View the original at:</em> {url}</p>"
 
@@ -48,10 +78,10 @@ class ContentExtractor:
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
         }
 
-        timeout = self.config.get("timeout", {}).get("request", 10)
-        extraction_timeout = self.config.get("timeout", {}).get("extraction", 15)
-        max_length = self.config.get("max_content_length", 50000)
-        site_specific_selectors = self.config.get("site_specific_selectors", {})
+        timeout = self.config.timeout.request
+        extraction_timeout = self.config.timeout.extraction
+        max_length = self.config.max_content_length
+        site_specific_selectors = self.config.site_specific_selectors
 
         try:
             # Get the page with timeout
@@ -59,7 +89,7 @@ class ContentExtractor:
 
             # Limit content size for memory management
             content = response.content[:500000]  # Limit to 500KB to avoid memory issues
-            include_images = self.config.get("include_images", True)
+            include_images = self.config.include_images
 
             # Process the content with a timeout
             with time_limit(extraction_timeout):
@@ -89,12 +119,8 @@ class ContentExtractor:
 
                     # Use generic fallback selectors if no site-specific selector matched
                     if not main_content:
-                        # Use the fallback selectors from config or default ones
-                        fallback_selectors = self.config.get("fallback_selectors", [
-                            "article", "main", "div.content", "div.article", "div.post",
-                            ".entry-content", "#content", ".article__body", ".post-content",
-                            ".story", ".story-body", "[itemprop='articleBody']"
-                        ])
+                        # Use the fallback selectors from config
+                        fallback_selectors = self.config.fallback_selectors
 
                         for selector in fallback_selectors:
                             try:
@@ -117,21 +143,10 @@ class ContentExtractor:
                         soup = BeautifulSoup(str(main_content), "html.parser")
 
                 # Clean up common elements regardless of extraction method
-                elements_to_remove = self.config.get("elements_to_remove", [
-                    'script', 'style', 'iframe', 'noscript', 'video', 'audio',
-                    'embed', 'object', 'canvas', 'form', 'button', 'aside',
-                    'header', 'footer', 'nav'
-                ])
+                elements_to_remove = self.config.elements_to_remove
 
                 # Get class selectors to remove from config
-                class_selectors_to_remove = self.config.get("class_selectors_to_remove", [
-                    '.comments', '.social-share', '.related-articles', '.recommendations',
-                    '.newsletter-signup', '.advertisement', '.ad', '.popup', '.modal',
-                    '.share', '.social', '.related', '.popular', '.trending',
-                    '.recommended', '#comments', '.comments', '.comment-section',
-                    '.advertisement', '.ad-container', '.sponsored', '.subscribe',
-                    '.newsletter', '.signup', '.sidebar', '.footer', '.header'
-                ])
+                class_selectors_to_remove = self.config.class_selectors_to_remove
 
                 # Remove elements by tag name
                 for tag in soup(elements_to_remove):

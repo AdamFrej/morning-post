@@ -14,7 +14,8 @@ class TemplateManager:
 
     def _setup_templates(self):
         """Set up Jinja2 template environment."""
-        template_dir = self.config.get("templates", {}).get("directory", "./templates")
+        # Using attribute access for Pydantic models
+        template_dir = self.config.templates.directory
 
         # Create template directory if it doesn't exist
         if not os.path.exists(template_dir):
@@ -44,7 +45,7 @@ class TemplateManager:
                 logger.warning("Could not locate default templates directory")
 
         # Copy main template
-        main_template_name = self.config.get("templates", {}).get("main_template", "paper_template.html")
+        main_template_name = self.config.templates.main_template
         main_template_path = os.path.join(template_dir, main_template_name)
 
         if not os.path.exists(main_template_path):
@@ -64,7 +65,7 @@ class TemplateManager:
                 self._create_empty_template(main_template_path, "Main template")
 
         # Copy article template
-        article_template_name = self.config.get("templates", {}).get("article_template", "article_template.html")
+        article_template_name = self.config.templates.article_template
         article_template_path = os.path.join(template_dir, article_template_name)
 
         if not os.path.exists(article_template_path):

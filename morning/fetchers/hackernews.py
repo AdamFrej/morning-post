@@ -1,41 +1,53 @@
+"""Hacker News article fetcher."""
 import logging
 import requests
 import datetime
 import time
 import gc
+from typing import List, Dict, Any
 from urllib.parse import urlparse
 from markdownify import markdownify as md
 
 from ..utils import TimeoutException
+from ..config_models import AppConfig
 
 logger = logging.getLogger(__name__)
 
 class HackerNewsFetcher:
-    def __init__(self, config, content_extractor):
-        """Initialize Hacker News fetcher."""
+    def __init__(self, config: AppConfig, content_extractor):
+        """Initialize Hacker News fetcher.
+
+        Args:
+            config: Validated application configuration
+            content_extractor: Content extraction service
+        """
         self.config = config
         self.content_extractor = content_extractor
 
-    def fetch_articles(self):
-        """Fetch self posts from Hacker News (Show HN, Ask HN, etc.)."""
+    def fetch_articles(self) -> List[Dict[str, Any]]:
+        """Fetch self posts from Hacker News (Show HN, Ask HN, etc.).
+
+        Returns:
+            List of article dictionaries with extracted content
+        """
         articles = []
 
-        if not self.config["hacker_news"]["include"]:
+        if not self.config.hacker_news.include:
             logger.info("Skipping Hacker News articles (disabled in config)")
             return articles
 
         try:
-            # Get API endpoints from config or use defaults
-            hn_config = self.config.get("hacker_news", {})
-            api_endpoints = hn_config.get("api_endpoints", {
-                "top_stories": "https://hacker-news.firebaseio.com/v0/topstories.json",
-                "item": "https://hacker-news.firebaseio.com/v0/item/{}.json",
-                "discussion_url": "https://news.ycombinator.com/item?id={}"
-            })
+            # Get API endpoints from config
+            hn_config = self.config.hacker_news
+            api_endpoints = hn_config.api_endpoints
 
             # Fetch top stories IDs
-            timeout = self.config.get("timeout", {}).get("request", 10)
-            response = requests.get(api_endpoints["top_stories"], timeout=timeout)
+            timeout = self.config.timeout.request
+
+            # Convert Pydantic HttpUrl to string
+            top_stories_url = str(api_endpoints.top_stories)
+            response = requests.get(top_stories_url, timeout=timeout)
+
             if response.status_code != 200:
                 logger.error(f"Failed to fetch Hacker News top stories: Status code {response.status_code}")
                 return articles
@@ -48,8 +60,8 @@ class HackerNewsFetcher:
             logger.info(f"Retrieved {len(top_stories)} top stories from Hacker News")
 
             count = 0
-            max_articles = min(hn_config["max_articles"], 10)  # Cap at 10 to avoid memory issues
-            only_self_posts = hn_config.get("only_self_posts", True)
+            max_articles = min(hn_config.max_articles, 10)  # Cap at 10 to avoid memory issues
+            only_self_posts = hn_config.only_self_posts
 
             for i, story_id in enumerate(top_stories):
                 if count >= max_articles:
@@ -61,7 +73,7 @@ class HackerNewsFetcher:
 
                 try:
                     # Fetch story details
-                    story_url = api_endpoints["item"].format(story_id)
+                    story_url = api_endpoints.item.format(story_id)
                     story_response = requests.get(story_url, timeout=timeout)
                     if story_response.status_code != 200:
                         logger.warning(f"Failed to fetch story {story_id}: Status code {story_response.status_code}")
@@ -89,7 +101,7 @@ class HackerNewsFetcher:
                         continue
 
                     # For self posts without URLs, use the HN discussion URL
-                    hn_url = api_endpoints["discussion_url"].format(story_id)
+                    hn_url = api_endpoints.discussion_url.format(story_id)
                     article_url = story.get("url", hn_url)
 
                     # For true self-posts, we want to get the text from the story itself
@@ -111,7 +123,7 @@ class HackerNewsFetcher:
                     }
 
                     # Extract full content only if it's not a true self-post (has URL to external site)
-                    if self.config["extract_full_content"] and not text:
+                    if self.config.extract_full_content and not text:
                         try:
                             article["content"] = self.content_extractor.extract_article_content(article_url)
                         except TimeoutException:

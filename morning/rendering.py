@@ -128,7 +128,7 @@ class DocumentRenderer:
         }
 
         # Get the main template name from config
-        template_name = self.config.get("templates", {}).get("main_template", "paper_template.html")
+        template_name = self.config.templates.main_template
 
         try:
             # Load and render the template
@@ -145,11 +145,11 @@ class DocumentRenderer:
             return None
 
         # Create output directory if it doesn't exist
-        os.makedirs(self.config["output_directory"], exist_ok=True)
+        os.makedirs(self.config.output_directory, exist_ok=True)
 
         # Generate PDF filename
         today = datetime.datetime.now().strftime("%Y-%m-%d")
-        pdf_path = os.path.join(self.config["output_directory"], f"morning_paper_{today}.pdf")
+        pdf_path = os.path.join(self.config.output_directory, f"morning_paper_{today}.pdf")
 
         try:
             # Create a temporary HTML file

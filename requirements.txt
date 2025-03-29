@@ -24,3 +24,5 @@ certifi>=2023.7.22
 # Optional content extraction alternatives (commented out by default)
 # newspaper3k==0.2.8
 # trafilatura==1.6.1
+
+pydantic==2.11.1

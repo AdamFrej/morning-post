@@ -1,17 +1,21 @@
 """Configuration management for Morning Paper Generator."""
 import json
-import os
 import logging
+import os
+from typing import Dict, Any, Optional
+
+from .config_models import AppConfig
 
 logger = logging.getLogger(__name__)
 
 class ConfigManager:
-    def __init__(self, config_path="config.json"):
+    def __init__(self, config_path: str = "config.json"):
         """Initialize configuration manager."""
         self.config_path = config_path
-        self.config = self._load_config()
+        self._raw_config = self._load_config_file()
+        self.config = self._parse_config()
 
-    def _load_config(self):
+    def _load_config_file(self) -> Dict[str, Any]:
         """Load configuration from JSON file."""
         try:
             with open(self.config_path, 'r') as f:
@@ -23,8 +27,21 @@ class ConfigManager:
             with open(self.config_path, 'w') as f:
                 json.dump(default_config, f, indent=4)
             return default_config
+        except json.JSONDecodeError as e:
+            logger.error(f"Error parsing config file: {e}")
+            logger.info("Using default configuration")
+            return self._get_default_config()
 
-    def _get_default_config(self):
+    def _parse_config(self) -> AppConfig:
+        """Parse raw config into validated Pydantic model."""
+        try:
+            return AppConfig(**self._raw_config)
+        except Exception as e:
+            logger.error(f"Error in configuration: {e}")
+            logger.info("Using default configuration")
+            return AppConfig(**self._get_default_config())
+
+    def _get_default_config(self) -> Dict[str, Any]:
         """Return default configuration settings."""
         return {
             "rss_feeds": [
@@ -57,29 +74,28 @@ class ConfigManager:
             "site_specific_selectors": {
                 "nytimes.com": "article[data-testid='article-container']",
                 "bbc.com": "article[data-component='text-block']",
-                "bbc.co.uk": "article[data-component='text-block']",
-                "theverge.com": "div.duet--article--article-body-component",
-                "washingtonpost.com": "div.article-body",
-                "medium.com": "article",
-                "towardsdatascience.com": "article",
-                "techcrunch.com": "div.article-content"
+                "bbc.co.uk": "article[data-component='text-block']"
             },
             "fallback_selectors": [
                 "article", "main", "div.content", "div.article", "div.post",
-                ".entry-content", "#content", ".article__body", ".post-content",
-                ".story", ".story-body", "[itemprop='articleBody']"
+                ".entry-content", "#content", ".article__body", ".post-content"
             ],
             "elements_to_remove": [
-                "script", "style", "iframe", "noscript", "video", "audio",
-                "embed", "object", "canvas", "form", "button", "aside",
-                "header", "footer", "nav"
+                "script", "style", "iframe", "noscript", "video", "audio"
             ],
             "class_selectors_to_remove": [
-                ".comments", ".social-share", ".related-articles", ".recommendations",
-                ".newsletter-signup", ".advertisement", ".ad", ".popup", ".modal",
-                ".share", ".social", ".related", ".popular", ".trending",
-                ".recommended", "#comments", ".comments", ".comment-section",
-                ".advertisement", ".ad-container", ".sponsored", ".subscribe",
-                ".newsletter", ".signup", ".sidebar", ".footer", ".header"
+                ".comments", ".social-share", ".related-articles",
+                ".newsletter-signup", ".advertisement", ".ad", ".popup"
             ]
         }
+
+    def save_config(self) -> None:
+        """Save current configuration back to file."""
+        try:
+            # Convert Pydantic model to dict and save
+            config_dict = self.config.dict()
+            with open(self.config_path, 'w') as f:
+                json.dump(config_dict, f, indent=4)
+            logger.info(f"Configuration saved to {self.config_path}")
+        except Exception as e:
+            logger.error(f"Failed to save configuration: {e}")
